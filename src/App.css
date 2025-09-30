@@ -274,7 +274,7 @@ body {
 }
 
 .connection-status.authenticated .status-dot {
-  background: #ffffff;
+  background: #00ff00;
 }
 
 .connection-status.error {
