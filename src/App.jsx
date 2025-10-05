@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const API_BASE_URL = 'http://localhost:8000';
+const API_BASE_URL = 'https://hospital-chat-bot-backend.onrender.com';
 
 // Nothing OS Style Icon Components (unchanged)
 const Icons = {
