@@ -10,13 +10,6 @@ const Icons = {
       <path d="M12 8v8M8 12h8" />
     </svg>
   ),
-  HospitalLarge: () => (
-    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <rect x="3" y="3" width="18" height="18" rx="3" />
-      <path d="M12 7v10M7 12h10" />
-      <circle cx="12" cy="12" r="1" fill="currentColor" />
-    </svg>
-  ),
   Upload: () => (
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
       <rect x="3" y="8" width="18" height="12" rx="2" />
@@ -78,11 +71,6 @@ const Icons = {
       <path d="M22 2L11 13M22 2l-7 20-4-9-9-4z" />
     </svg>
   ),
-  StatusDot: ({ status }) => (
-    <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: status === "success" ? "#28a745" : status === "error" ? "#dc3545" : status === "warning" ? "#ffc107" : "#6c757d", position: "relative" }}>
-      <div style={{ width: "12px", height: "12px", borderRadius: "50%", border: `2px solid ${status === "success" ? "#28a745" : status === "error" ? "#dc3545" : status === "warning" ? "#ffc107" : "#6c757d"}`, position: "absolute", top: "-4px", left: "-4px", opacity: "0.3" }}></div>
-    </div>
-  ),
   FileUpload: () => (
     <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <rect x="3" y="3" width="18" height="18" rx="4" />
@@ -104,6 +92,11 @@ const Icons = {
       <path d="M7 12l4-4 4 4 4-4" />
     </svg>
   ),
+  Menu: () => (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+      <path d="M3 12h18M3 6h18M3 18h18" />
+    </svg>
+  ),
 };
 
 const App = () => {
@@ -122,6 +115,7 @@ const App = () => {
   const [dragOver, setDragOver] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [messageCount, setMessageCount] = useState(0);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const uploadIntervalRef = useRef(null);
@@ -419,7 +413,7 @@ const App = () => {
                 }}
               >
                 <Icons.Dashboard />
-                <span>Dashboard</span>
+                <span style={styles.adminBtnText}>Dashboard</span>
               </button>
             )}
           </div>
@@ -500,12 +494,12 @@ const App = () => {
           {isTyping ? (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <div style={styles.loadingSpinner}></div>
-              Sending...
+              <span style={styles.sendBtnText}>Sending...</span>
             </div>
           ) : (
             <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
               <Icons.Send />
-              Send
+              <span style={styles.sendBtnText}>Send</span>
             </div>
           )}
         </button>
@@ -544,29 +538,29 @@ const App = () => {
                 </h3>
                 <div style={styles.statusGrid}>
                   <div style={styles.statusItem}>
-                    <span>Firebase</span>
+                    <span style={styles.statusLabel}>Firebase</span>
                     <span style={systemStatus.firebase_initialized ? styles.statusSuccess : styles.statusError}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         {systemStatus.firebase_initialized ? <Icons.Check /> : <Icons.Error />}
-                        {systemStatus.firebase_initialized ? "Connected" : "Disconnected"}
+                        <span style={styles.statusText}>{systemStatus.firebase_initialized ? "Connected" : "Disconnected"}</span>
                       </div>
                     </span>
                   </div>
                   <div style={styles.statusItem}>
-                    <span>Documents</span>
+                    <span style={styles.statusLabel}>Documents</span>
                     <span style={styles.statusSuccess}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         <Icons.Document />
-                        {systemStatus.documents_loaded || 0} loaded
+                        <span style={styles.statusText}>{systemStatus.documents_loaded || 0} loaded</span>
                       </div>
                     </span>
                   </div>
                   <div style={styles.statusItem}>
-                    <span>Vector Store</span>
+                    <span style={styles.statusLabel}>Vector Store</span>
                     <span style={systemStatus.vectorstore_ready ? styles.statusSuccess : styles.statusError}>
                       <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                         {systemStatus.vectorstore_ready ? <Icons.Check /> : <Icons.Error />}
-                        {systemStatus.vectorstore_ready ? "Ready" : "Not Ready"}
+                        <span style={styles.statusText}>{systemStatus.vectorstore_ready ? "Ready" : "Not Ready"}</span>
                       </div>
                     </span>
                   </div>
@@ -615,9 +609,9 @@ const App = () => {
                 />
                 {uploadFile && (
                   <div style={styles.selectedFile}>
-                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                    <div style={styles.selectedFileInfo}>
                       <Icons.Document />
-                      <span>{uploadFile.name} ({formatFileSize(uploadFile.size)})</span>
+                      <span style={styles.fileName}>{uploadFile.name} ({formatFileSize(uploadFile.size)})</span>
                     </div>
                     <button
                       onClick={removeSelectedFile}
@@ -673,7 +667,7 @@ const App = () => {
                   >
                     <div style={{ display: "flex", alignItems: "center", gap: "6px" }}>
                       <Icons.Reload />
-                      Reload
+                      <span style={styles.reloadBtnText}>Reload</span>
                     </div>
                   </button>
                 </div>
@@ -683,9 +677,9 @@ const App = () => {
                   ) : (
                     documents.map((doc, index) => (
                       <div key={index} style={styles.documentItem}>
-                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                        <div style={styles.docInfo}>
                           <Icons.Document />
-                          <span>{doc.name}</span>
+                          <span style={styles.docName}>{doc.name}</span>
                         </div>
                         <span style={styles.docSize}>{formatFileSize(doc.size)}</span>
                       </div>
@@ -712,7 +706,7 @@ const styles = {
   chatbotHeader: {
     background: "linear-gradient(135deg, #2E4AC7 0%, #1F3A9E 100%)",
     color: "white",
-    padding: "20px",
+    padding: "16px",
     boxShadow: "0 4px 6px rgba(0,0,0,0.1)"
   },
   headerContent: {
@@ -720,21 +714,21 @@ const styles = {
     justifyContent: "space-between",
     alignItems: "center",
     flexWrap: "wrap",
-    gap: "15px"
+    gap: "12px"
   },
   headerTitle: {
     margin: 0,
-    fontSize: "20px"
+    fontSize: "18px"
   },
   headerSubtitle: {
-    margin: "5px 0 0 0",
-    fontSize: "13px",
+    margin: "4px 0 0 0",
+    fontSize: "12px",
     opacity: 0.9
   },
   headerControls: {
     display: "flex",
     alignItems: "center",
-    gap: "12px",
+    gap: "10px",
     flexWrap: "wrap"
   },
   userInfo: {
@@ -745,40 +739,43 @@ const styles = {
   },
   userName: {
     fontWeight: "bold",
-    fontSize: "14px"
+    fontSize: "13px"
   },
   roleSelector: {
-    padding: "6px 12px",
+    padding: "6px 10px",
     background: "rgba(255,255,255,0.2)",
     border: "1px solid rgba(255,255,255,0.3)",
     color: "white",
     borderRadius: "8px",
-    fontSize: "13px",
+    fontSize: "12px",
     fontWeight: "500",
     cursor: "pointer"
   },
   adminPanelBtn: {
-    padding: "10px 16px",
+    padding: "8px 14px",
     background: "rgba(255,255,255,0.2)",
     border: "1px solid rgba(255,255,255,0.3)",
     color: "white",
     borderRadius: "10px",
     cursor: "pointer",
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: "500",
     transition: "all 0.3s",
     display: "flex",
     alignItems: "center",
-    gap: "8px"
+    gap: "6px"
+  },
+  adminBtnText: {
+    display: "inline"
   },
   hospitalLogo: {
     display: "flex",
     alignItems: "center",
-    gap: "15px"
+    gap: "12px"
   },
   logoIconSmall: {
-    width: "45px",
-    height: "45px",
+    width: "40px",
+    height: "40px",
     background: "linear-gradient(135deg, #2E4AC7 0%, #1F3A9E 100%)",
     borderRadius: "12px",
     display: "flex",
@@ -790,20 +787,21 @@ const styles = {
     flexShrink: 0
   },
   logoText: {
-    flex: 1
+    flex: 1,
+    minWidth: 0
   },
   chatMessages: {
     flex: 1,
     overflowY: "auto",
-    padding: "20px",
+    padding: "16px",
     display: "flex",
     flexDirection: "column",
-    gap: "15px",
+    gap: "12px",
     background: "linear-gradient(135deg, #fafcff 0%, #f5f9ff 100%)"
   },
   message: {
-    maxWidth: "70%",
-    padding: "14px 18px",
+    maxWidth: "85%",
+    padding: "12px 16px",
     borderRadius: "16px",
     animation: "fadeIn 0.3s ease-in",
     wordWrap: "break-word"
@@ -821,12 +819,12 @@ const styles = {
     border: "1px solid #d1e4ff"
   },
   messageContent: {
-    fontSize: "15px",
+    fontSize: "14px",
     lineHeight: 1.5,
-    marginBottom: "6px"
+    marginBottom: "4px"
   },
   messageTime: {
-    fontSize: "11px",
+    fontSize: "10px",
     opacity: 0.7
   },
   typingIndicator: {
@@ -842,7 +840,7 @@ const styles = {
     animation: "bounce 1.4s infinite ease-in-out"
   },
   quickActions: {
-    padding: "20px",
+    padding: "16px",
     background: "linear-gradient(135deg, #e8f1ff 0%, #f0f8ff 100%)",
     borderTop: "1px solid #d1e4ff",
     animation: "slideUp 0.4s ease-out"
@@ -851,75 +849,83 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "16px"
+    marginBottom: "12px",
+    flexWrap: "wrap",
+    gap: "8px"
   },
   quickActionsTitle: {
     margin: 0,
-    fontSize: "16px",
+    fontSize: "15px",
     color: "#1F3A9E",
     fontWeight: 600
   },
   messageCounter: {
-    fontSize: "13px",
+    fontSize: "12px",
     color: "#718096",
-    padding: "6px 12px",
+    padding: "4px 10px",
     background: "rgba(255, 140, 0, 0.1)",
     borderRadius: "12px",
-    border: "1px solid rgba(255, 140, 0, 0.2)"
+    border: "1px solid rgba(255, 140, 0, 0.2)",
+    whiteSpace: "nowrap"
   },
   actionButtons: {
-    display: "flex",
-    flexWrap: "wrap",
-    gap: "10px"
+    display: "grid",
+    gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
+    gap: "8px"
   },
   actionBtn: {
-    padding: "12px 18px",
+    padding: "10px 14px",
     background: "linear-gradient(135deg, #2E4AC7 0%, #1F3A9E 100%)",
     color: "white",
     border: "none",
     borderRadius: "10px",
     cursor: "pointer",
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: "500",
     transition: "all 0.3s",
     whiteSpace: "nowrap",
-    boxShadow: "0 2px 4px rgba(46, 74, 199, 0.3)"
+    boxShadow: "0 2px 4px rgba(46, 74, 199, 0.3)",
+    textAlign: "center"
   },
   chatInput: {
     display: "flex",
-    gap: "12px",
-    padding: "20px",
+    gap: "10px",
+    padding: "16px",
     background: "white",
     borderTop: "1px solid #e8f1ff"
   },
   messageInput: {
     flex: 1,
-    padding: "14px 18px",
+    padding: "12px 16px",
     border: "2px solid #d1e4ff",
     borderRadius: "16px",
-    fontSize: "15px",
+    fontSize: "14px",
     resize: "none",
     outline: "none",
     fontFamily: "inherit",
     maxHeight: "120px",
     transition: "border-color 0.3s",
-    background: "linear-gradient(135deg, #fafcff 0%, #f8fafe 100%)"
+    background: "linear-gradient(135deg, #fafcff 0%, #f8fafe 100%)",
+    minHeight: "44px"
   },
   sendButton: {
-    padding: "14px 24px",
+    padding: "12px 20px",
     background: "linear-gradient(135deg, #FF8C00 0%, #FFA500 100%)",
     color: "white",
     border: "none",
     borderRadius: "16px",
     cursor: "pointer",
-    fontSize: "15px",
+    fontSize: "14px",
     fontWeight: "bold",
     transition: "all 0.3s",
     whiteSpace: "nowrap",
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    minWidth: "100px"
+    minWidth: "90px"
+  },
+  sendBtnText: {
+    display: "inline"
   },
   sendButtonDisabled: {
     opacity: 0.5,
@@ -943,9 +949,10 @@ const styles = {
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    padding: "20px",
+    padding: "16px",
     zIndex: 1000,
-    animation: "fadeIn 0.3s ease-in"
+    animation: "fadeIn 0.3s ease-in",
+    overflowY: "auto"
   },
   modalContainer: {
     background: "linear-gradient(135deg, #ffffff 0%, #f8fafe 100%)",
@@ -956,28 +963,31 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     boxShadow: "0 20px 60px rgba(0,0,0,0.3)",
-    animation: "slideUp 0.3s ease-out"
+    animation: "slideUp 0.3s ease-out",
+    margin: "auto"
   },
   modalHeader: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "25px 30px",
+    padding: "20px",
     borderBottom: "1px solid #e2e8f0",
     background: "linear-gradient(135deg, #2E4AC7 0%, #1F3A9E 100%)",
     color: "white",
     borderTopLeftRadius: "20px",
-    borderTopRightRadius: "20px"
+    borderTopRightRadius: "20px",
+    flexWrap: "wrap",
+    gap: "10px"
   },
   modalTitle: {
     margin: 0,
-    fontSize: "24px",
+    fontSize: "20px",
     color: "white",
     fontWeight: 600
   },
   modalClose: {
-    width: "44px",
-    height: "44px",
+    width: "40px",
+    height: "40px",
     border: "none",
     background: "rgba(255,255,255,0.2)",
     borderRadius: "12px",
@@ -987,26 +997,27 @@ const styles = {
     transition: "all 0.3s",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
+    justifyContent: "center",
+    flexShrink: 0
   },
   modalContent: {
     flex: 1,
     overflowY: "auto",
-    padding: "30px",
+    padding: "20px",
     display: "flex",
     flexDirection: "column",
-    gap: "24px",
+    gap: "20px",
     background: "linear-gradient(135deg, #fafcff 0%, #f5f9ff 100%)"
   },
   adminCard: {
     background: "linear-gradient(135deg, #ffffff 0%, #f8fafe 100%)",
     borderRadius: "16px",
-    padding: "28px",
+    padding: "20px",
     border: "1px solid #e8f1ff"
   },
   cardTitle: {
-    margin: "0 0 20px 0",
-    fontSize: "18px",
+    margin: "0 0 16px 0",
+    fontSize: "16px",
     color: "#1F3A9E",
     fontWeight: 600
   },
@@ -1014,22 +1025,32 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "20px"
+    marginBottom: "16px",
+    flexWrap: "wrap",
+    gap: "10px"
   },
   statusGrid: {
     display: "grid",
-    gridTemplateColumns: "repeat(auto-fit, minmax(250px, 1fr))",
-    gap: "16px"
+    gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+    gap: "12px"
   },
   statusItem: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "16px 20px",
+    padding: "14px 16px",
     background: "linear-gradient(135deg, #f8fafe 0%, #f0f8ff 100%)",
     borderRadius: "12px",
-    fontSize: "14px",
-    border: "1px solid #e8f1ff"
+    fontSize: "13px",
+    border: "1px solid #e8f1ff",
+    flexWrap: "wrap",
+    gap: "8px"
+  },
+  statusLabel: {
+    fontWeight: 500
+  },
+  statusText: {
+    fontSize: "12px"
   },
   statusSuccess: {
     color: "#28a745",
@@ -1042,7 +1063,7 @@ const styles = {
   uploadArea: {
     border: "2px dashed #d1e4ff",
     borderRadius: "16px",
-    padding: "48px 24px",
+    padding: "40px 20px",
     textAlign: "center",
     cursor: "pointer",
     transition: "all 0.3s",
@@ -1053,9 +1074,9 @@ const styles = {
     background: "#eef2ff"
   },
   uploadText: {
-    margin: "16px 0 0 0",
+    margin: "12px 0 0 0",
     color: "#718096",
-    fontSize: "15px",
+    fontSize: "14px",
     fontWeight: 500
   },
   fileInput: {
@@ -1065,11 +1086,26 @@ const styles = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "16px 20px",
+    padding: "14px 16px",
     background: "linear-gradient(135deg, #e8f1ff 0%, #f0f8ff 100%)",
     borderRadius: "12px",
-    marginTop: "16px",
-    border: "1px solid #d1e4ff"
+    marginTop: "12px",
+    border: "1px solid #d1e4ff",
+    gap: "10px",
+    flexWrap: "wrap"
+  },
+  selectedFileInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flex: 1,
+    minWidth: 0
+  },
+  fileName: {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    fontSize: "13px"
   },
   removeFileBtn: {
     width: "32px",
@@ -1084,19 +1120,20 @@ const styles = {
     display: "flex",
     alignItems: "center",
     justifyContent: "center",
-    transition: "all 0.3s"
+    transition: "all 0.3s",
+    flexShrink: 0
   },
   uploadBtn: {
     width: "100%",
-    padding: "14px 20px",
+    padding: "12px 18px",
     background: "linear-gradient(135deg, #FF8C00 0%, #FFA500 100%)",
     color: "white",
     border: "none",
     borderRadius: "12px",
     cursor: "pointer",
-    fontSize: "15px",
+    fontSize: "14px",
     fontWeight: "bold",
-    marginTop: "16px",
+    marginTop: "12px",
     transition: "all 0.3s",
     display: "flex",
     alignItems: "center",
@@ -1112,7 +1149,7 @@ const styles = {
     height: "8px",
     background: "#e8f1ff",
     borderRadius: "4px",
-    marginTop: "16px",
+    marginTop: "12px",
     overflow: "hidden"
   },
   progressFill: {
@@ -1121,49 +1158,69 @@ const styles = {
     transition: "width 0.3s ease-in-out"
   },
   reloadBtn: {
-    padding: "10px 16px",
+    padding: "8px 14px",
     background: "#28a745",
     color: "white",
     border: "none",
     borderRadius: "10px",
     cursor: "pointer",
-    fontSize: "14px",
+    fontSize: "13px",
     fontWeight: "500",
     display: "flex",
     alignItems: "center",
     gap: "6px",
-    transition: "all 0.3s"
+    transition: "all 0.3s",
+    flexShrink: 0
+  },
+  reloadBtnText: {
+    display: "inline"
   },
   documentsList: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "10px",
     maxHeight: "300px",
     overflowY: "auto"
   },
   noDocuments: {
     textAlign: "center",
     color: "#718096",
-    padding: "32px",
-    fontSize: "15px"
+    padding: "24px",
+    fontSize: "14px"
   },
   documentItem: {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: "16px 20px",
+    padding: "14px 16px",
     background: "linear-gradient(135deg, #f8fafe 0%, #f0f8ff 100%)",
     borderRadius: "12px",
-    border: "1px solid #e8f1ff"
+    border: "1px solid #e8f1ff",
+    gap: "10px",
+    flexWrap: "wrap"
+  },
+  docInfo: {
+    display: "flex",
+    alignItems: "center",
+    gap: "8px",
+    flex: 1,
+    minWidth: 0
+  },
+  docName: {
+    overflow: "hidden",
+    textOverflow: "ellipsis",
+    whiteSpace: "nowrap",
+    fontSize: "13px"
   },
   docSize: {
-    fontSize: "12px",
+    fontSize: "11px",
     color: "#718096",
-    fontWeight: 500
+    fontWeight: 500,
+    flexShrink: 0
   }
 };
 
-// Add CSS animations
+// Add CSS animations and media queries
 const styleSheet = document.createElement("style");
 styleSheet.textContent = `
   @keyframes fadeIn {
@@ -1181,6 +1238,97 @@ styleSheet.textContent = `
   @keyframes spin {
     0% { transform: rotate(0deg); }
     100% { transform: rotate(360deg); }
+  }
+  
+  /* Mobile Responsive Styles */
+  @media (max-width: 768px) {
+    .message {
+      max-width: 90% !important;
+      font-size: 13px !important;
+    }
+    
+    .headerTitle {
+      font-size: 16px !important;
+    }
+    
+    .headerSubtitle {
+      font-size: 11px !important;
+    }
+    
+    .actionButtons {
+      grid-template-columns: 1fr !important;
+    }
+    
+    .statusGrid {
+      grid-template-columns: 1fr !important;
+    }
+    
+    .modalContainer {
+      margin: 0 !important;
+      max-height: 95vh !important;
+      border-radius: 12px !important;
+    }
+    
+    .modalHeader {
+      border-radius: 12px 12px 0 0 !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .sendBtnText, .adminBtnText, .reloadBtnText {
+      display: none !important;
+    }
+    
+    .chatInput {
+      gap: 8px !important;
+    }
+    
+    .sendButton {
+      min-width: 50px !important;
+      padding: 12px !important;
+    }
+    
+    .adminPanelBtn {
+      padding: 8px 12px !important;
+    }
+    
+    .reloadBtn {
+      padding: 8px 10px !important;
+    }
+    
+    .quickActionsTitle {
+      font-size: 14px !important;
+    }
+    
+    .messageCounter {
+      font-size: 11px !important;
+      padding: 4px 8px !important;
+    }
+    
+    .actionBtn {
+      font-size: 12px !important;
+      padding: 9px 12px !important;
+    }
+    
+    .modalTitle {
+      font-size: 18px !important;
+    }
+    
+    .cardTitle {
+      font-size: 15px !important;
+    }
+    
+    .uploadText {
+      font-size: 13px !important;
+    }
+    
+    .fileName, .docName {
+      font-size: 12px !important;
+    }
+    
+    .statusText {
+      font-size: 11px !important;
+    }
   }
 `;
 document.head.appendChild(styleSheet);
