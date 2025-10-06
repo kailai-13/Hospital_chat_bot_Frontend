@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const API_BASE_URL = 'http://16.170.238.44';
+const API_BASE_URL = 'https://16.170.238.44';
 
 // Nothing OS Style Icon Components (unchanged)
 const Icons = {
