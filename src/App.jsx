@@ -92,11 +92,6 @@ const Icons = {
       <path d="M7 12l4-4 4 4 4-4" />
     </svg>
   ),
-  Menu: () => (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-      <path d="M3 12h18M3 6h18M3 18h18" />
-    </svg>
-  ),
 };
 
 const App = () => {
@@ -115,7 +110,6 @@ const App = () => {
   const [dragOver, setDragOver] = useState(false);
   const [showQuickActions, setShowQuickActions] = useState(true);
   const [messageCount, setMessageCount] = useState(0);
-  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const uploadIntervalRef = useRef(null);
@@ -138,6 +132,7 @@ const App = () => {
     testBackendConnection();
   }, []);
 
+  // Test backend connection
   const testBackendConnection = async () => {
     try {
       const response = await fetch(`${APIBASEURL}/`);
@@ -156,6 +151,7 @@ const App = () => {
     }
   };
 
+  // Send message to chatbot
   const handleSendMessage = async () => {
     if (!inputMessage.trim() || isTyping) return;
 
@@ -175,15 +171,11 @@ const App = () => {
     try {
       const response = await fetch(`${APIBASEURL}/chat`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json"
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: currentInput, user_role: userRole })
       });
 
-      if (!response.ok) {
-        throw new Error("Failed to get response");
-      }
+      if (!response.ok) throw new Error("Failed to get response");
 
       const data = await response.json();
       const botMsg = {
@@ -204,6 +196,7 @@ const App = () => {
     }
   };
 
+  // Load documents list
   const loadDocuments = async () => {
     try {
       const response = await fetch(`${APIBASEURL}/admin/documents`);
@@ -215,6 +208,7 @@ const App = () => {
     }
   };
 
+  // Load system status
   const loadSystemStatus = async () => {
     try {
       const response = await fetch(`${APIBASEURL}/system/status`);
@@ -226,6 +220,7 @@ const App = () => {
     }
   };
 
+  // Handle file selection
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -238,6 +233,7 @@ const App = () => {
     }
   };
 
+  // Remove selected file
   const removeSelectedFile = () => {
     setUploadFile(null);
     if (fileInputRef.current) {
@@ -245,6 +241,7 @@ const App = () => {
     }
   };
 
+  // Upload document
   const handleFileUpload = async () => {
     if (!uploadFile || uploading) return;
 
@@ -312,6 +309,7 @@ const App = () => {
     }
   };
 
+  // Reload documents
   const handleReloadDocuments = async () => {
     setLoading(true);
     try {
@@ -340,6 +338,7 @@ const App = () => {
     }
   };
 
+  // Quick actions by role
   const quickActions = {
     patient: ["Find a Doctor", "Book Appointment", "Emergency Contact", "Treatment Information"],
     visitor: ["Visiting Hours", "Hospital Location", "Parking Information", "Amenities"],
@@ -347,6 +346,7 @@ const App = () => {
     admin: ["System Status", "Upload Documents", "Reload System"]
   };
 
+  // Handle quick action click
   const handleQuickAction = (action) => {
     if (action === "Upload Documents" || action === "System Status") {
       setShowAdminModal(true);
@@ -364,6 +364,7 @@ const App = () => {
     setMessageCount((prev) => prev + 1);
   };
 
+  // Format file size
   const formatFileSize = (bytes) => {
     if (bytes === 0) return "0 Bytes";
     const k = 1024;
@@ -1240,19 +1241,10 @@ styleSheet.textContent = `
     100% { transform: rotate(360deg); }
   }
   
-  /* Mobile Responsive Styles */
   @media (max-width: 768px) {
     .message {
       max-width: 90% !important;
       font-size: 13px !important;
-    }
-    
-    .headerTitle {
-      font-size: 16px !important;
-    }
-    
-    .headerSubtitle {
-      font-size: 11px !important;
     }
     
     .actionButtons {
@@ -1262,72 +1254,11 @@ styleSheet.textContent = `
     .statusGrid {
       grid-template-columns: 1fr !important;
     }
-    
-    .modalContainer {
-      margin: 0 !important;
-      max-height: 95vh !important;
-      border-radius: 12px !important;
-    }
-    
-    .modalHeader {
-      border-radius: 12px 12px 0 0 !important;
-    }
   }
   
   @media (max-width: 480px) {
     .sendBtnText, .adminBtnText, .reloadBtnText {
       display: none !important;
-    }
-    
-    .chatInput {
-      gap: 8px !important;
-    }
-    
-    .sendButton {
-      min-width: 50px !important;
-      padding: 12px !important;
-    }
-    
-    .adminPanelBtn {
-      padding: 8px 12px !important;
-    }
-    
-    .reloadBtn {
-      padding: 8px 10px !important;
-    }
-    
-    .quickActionsTitle {
-      font-size: 14px !important;
-    }
-    
-    .messageCounter {
-      font-size: 11px !important;
-      padding: 4px 8px !important;
-    }
-    
-    .actionBtn {
-      font-size: 12px !important;
-      padding: 9px 12px !important;
-    }
-    
-    .modalTitle {
-      font-size: 18px !important;
-    }
-    
-    .cardTitle {
-      font-size: 15px !important;
-    }
-    
-    .uploadText {
-      font-size: 13px !important;
-    }
-    
-    .fileName, .docName {
-      font-size: 12px !important;
-    }
-    
-    .statusText {
-      font-size: 11px !important;
     }
   }
 `;
