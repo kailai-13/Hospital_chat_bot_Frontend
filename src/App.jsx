@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const API_BASE_URL = 'https://51.20.132.21'; // Adjust as needed
+const API_BASE_URL = 'https://13.49.70.115'; // Adjust as needed
 
 // Time formatting helpers (no seconds)
 const formatTime = (date) => {
