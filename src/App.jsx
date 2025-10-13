@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 
-const API_BASE_URL = 'https://13.49.70.115'; // Adjust as needed
+const API_BASE_URL = 'http://localhost:8000'; // Adjust as needed
 
 // Time formatting helpers (no seconds)
 const formatTime = (date) => {
@@ -486,6 +486,397 @@ const TableRenderer = ({ content }) => {
   );
 };
 
+// Responsive Admin Dashboard Components
+const AdminDashboard = ({ 
+  adminTab, 
+  systemStatus, 
+  documents, 
+  uploadFile, 
+  uploading, 
+  uploadProgress, 
+  dragOver,
+  fileInputRef,
+  onFileSelect,
+  onRemoveFile,
+  onFileUpload,
+  onReloadDocuments,
+  onDragOver,
+  onDragLeave,
+  onDrop,
+  formatFileSize
+}) => (
+  <div style={styles.adminDashboard}>
+    <div style={styles.adminCard}>
+      <h3 style={styles.cardTitle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Icons.Analysis />
+          System Status
+        </div>
+      </h3>
+      <div style={styles.statusGrid}>
+        <div style={styles.statusItem}>
+          <span>Firebase:</span>
+          <span style={systemStatus.firebase_initialized ? styles.statusSuccess : styles.statusError}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {systemStatus.firebase_initialized ? <Icons.Check /> : <Icons.Error />}
+              {systemStatus.firebase_initialized ? 'Connected' : 'Disconnected'}
+            </div>
+          </span>
+        </div>
+        <div style={styles.statusItem}>
+          <span>Documents:</span>
+          <span style={styles.statusSuccess}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Icons.Document />
+              {systemStatus.documents_loaded || 0} loaded
+            </div>
+          </span>
+        </div>
+        <div style={styles.statusItem}>
+          <span>Vector Store:</span>
+          <span style={systemStatus.vectorstore_ready ? styles.statusSuccess : styles.statusError}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              {systemStatus.vectorstore_ready ? <Icons.Check /> : <Icons.Error />}
+              {systemStatus.vectorstore_ready ? 'Ready' : 'Not Ready'}
+            </div>
+          </span>
+        </div>
+      </div>
+    </div>
+
+    <div style={styles.adminCard}>
+      <h3 style={styles.cardTitle}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Icons.Upload />
+          Upload Document
+        </div>
+      </h3>
+      <div 
+        style={{...styles.uploadArea, ...(dragOver ? styles.uploadAreaDragOver : {})}}
+        onDragOver={onDragOver}
+        onDragLeave={onDragLeave}
+        onDrop={onDrop}
+        onClick={() => fileInputRef.current?.click()}
+      >
+        <Icons.FileUpload />
+        <p style={styles.uploadText}>Drag & Drop PDF or Click to Browse</p>
+      </div>
+
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf"
+        onChange={onFileSelect}
+        style={styles.fileInput}
+      />
+
+      {uploadFile && (
+        <div style={styles.selectedFile}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+            <Icons.Document />
+            <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {uploadFile.name} ({formatFileSize(uploadFile.size)})
+            </span>
+          </div>
+          <button onClick={onRemoveFile} style={styles.removeFileBtn}>
+            <Icons.Remove />
+          </button>
+        </div>
+      )}
+
+      <button 
+        onClick={onFileUpload}
+        disabled={!uploadFile || uploading}
+        style={{...styles.uploadBtn, ...(!uploadFile || uploading ? styles.uploadBtnDisabled : {})}}
+      >
+        {uploading ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={styles.loadingSpinner}></div>
+            Uploading {uploadProgress}%
+          </div>
+        ) : (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Icons.Upload />
+            Upload PDF
+          </div>
+        )}
+      </button>
+
+      {uploading && (
+        <div style={styles.progressBar}>
+          <div style={{...styles.progressFill, width: `${uploadProgress}%`}}></div>
+        </div>
+      )}
+    </div>
+
+    <div style={styles.adminCard}>
+      <div style={styles.cardHeader}>
+        <h3 style={styles.cardTitle}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <Icons.Document />
+            Documents ({documents.length})
+          </div>
+        </h3>
+        <button onClick={onReloadDocuments} style={styles.reloadBtn}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Icons.Reload />
+            <span style={styles.reloadText}>Reload</span>
+          </div>
+        </button>
+      </div>
+      <div style={styles.documentsList}>
+        {documents.length === 0 ? (
+          <p style={styles.noDocuments}>No documents uploaded yet</p>
+        ) : (
+          documents.map((doc, index) => (
+            <div key={index} style={styles.documentItem}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1 }}>
+                <Icons.Document />
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {doc.name}
+                </span>
+              </div>
+              <span style={styles.docSize}>{formatFileSize(doc.size)}</span>
+            </div>
+          ))
+        )}
+      </div>
+    </div>
+  </div>
+);
+
+const AdminAppointments = ({
+  statistics,
+  appointments,
+  appointmentFilter,
+  onAppointmentFilterChange,
+  onAppointmentAction,
+  onLoadAppointments,
+  onLoadStatistics
+}) => {
+  useEffect(() => {
+    onLoadAppointments();
+    onLoadStatistics();
+  }, [appointmentFilter]);
+
+  return (
+    <div style={styles.adminSection}>
+      <div style={styles.statsGrid}>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>📊</div>
+          <div>
+            <div style={styles.statValue}>{statistics.total_conversations || 0}</div>
+            <div style={styles.statLabel}>Total Chats</div>
+          </div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>⏳</div>
+          <div>
+            <div style={styles.statValue}>{statistics.pending_appointments || 0}</div>
+            <div style={styles.statLabel}>Pending</div>
+          </div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>✅</div>
+          <div>
+            <div style={styles.statValue}>{statistics.accepted_appointments || 0}</div>
+            <div style={styles.statLabel}>Accepted</div>
+          </div>
+        </div>
+        <div style={styles.statCard}>
+          <div style={styles.statIcon}>❌</div>
+          <div>
+            <div style={styles.statValue}>{statistics.rejected_appointments || 0}</div>
+            <div style={styles.statLabel}>Rejected</div>
+          </div>
+        </div>
+      </div>
+      
+      <div style={styles.adminCard}>
+        <div style={styles.cardHeader}>
+          <h3 style={styles.cardTitle}>Appointment Requests</h3>
+          <select 
+            value={appointmentFilter}
+            onChange={(e) => onAppointmentFilterChange(e.target.value)}
+            style={styles.filterSelect}
+          >
+            <option value="pending">Pending</option>
+            <option value="accepted">Accepted</option>
+            <option value="rejected">Rejected</option>
+          </select>
+        </div>
+        <div style={styles.appointmentsList}>
+          {appointments.length === 0 ? (
+            <p style={styles.noData}>No {appointmentFilter} appointments</p>
+          ) : (
+            appointments.map((apt, index) => (
+              <div key={index} style={styles.appointmentCard}>
+                <div style={styles.appointmentHeader}>
+                  <div style={styles.appointmentHeaderContent}>
+                    <h4 style={styles.appointmentName}>{apt.user_name}</h4>
+                    <span style={{
+                      ...styles.appointmentBadge,
+                      background: apt.status === 'pending' ? '#fff3cd' : apt.status === 'accepted' ? '#d4edda' : '#f8d7da',
+                      color: apt.status === 'pending' ? '#856404' : apt.status === 'accepted' ? '#155724' : '#721c24'
+                    }}>
+                      {apt.status}
+                    </span>
+                  </div>
+                  <span style={styles.appointmentTime}>{formatDateTime(apt.created_at)}</span>
+                </div>
+                <div style={styles.appointmentDetails}>
+                  <div style={styles.appointmentRow}>
+                    <span>📞</span>
+                    <span style={styles.phoneNumber}>{apt.phone_number}</span>
+                  </div>
+                  <div style={styles.appointmentRow}>
+                    <span>📅</span>
+                    <span>{apt.preferred_date} at {apt.preferred_time}</span>
+                  </div>
+                  <div style={styles.appointmentReason}>
+                    <strong>Reason:</strong> {apt.reason}
+                  </div>
+                  <div style={styles.appointmentMessage}>
+                    <strong>Original Message:</strong> {apt.original_message}
+                  </div>
+                  {apt.admin_notes && (
+                    <div style={styles.adminNotes}>
+                      <strong>Admin Notes:</strong> {apt.admin_notes}
+                    </div>
+                  )}
+                </div>
+                {apt.status === 'pending' && (
+                  <div style={styles.appointmentActions}>
+                    <button 
+                      style={styles.acceptBtn} 
+                      onClick={() => onAppointmentAction(apt.appointment_id, 'accept')}
+                    >
+                      ✅ Accept & Call Patient
+                    </button>
+                    <button 
+                      style={styles.rejectBtn} 
+                      onClick={() => onAppointmentAction(apt.appointment_id, 'reject')}
+                    >
+                      ❌ Reject
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AdminHistory = ({
+  chatHistory,
+  historyFilter,
+  onHistoryFilterChange,
+  onLoadChatHistory
+}) => {
+  useEffect(() => {
+    onLoadChatHistory();
+  }, [historyFilter]);
+
+  return (
+    <div style={styles.adminSection}>
+      <div style={styles.adminCard}>
+        <div style={styles.cardHeader}>
+          <h3 style={styles.cardTitle}>Chat History</h3>
+          <select 
+            value={historyFilter}
+            onChange={(e) => onHistoryFilterChange(e.target.value)}
+            style={styles.filterSelect}
+          >
+            <option value="all">All Roles</option>
+            <option value="patient">Patients</option>
+            <option value="visitor">Visitors</option>
+            <option value="staff">Staff</option>
+            <option value="admin">Admins</option>
+          </select>
+        </div>
+        <div style={styles.historyList}>
+          {chatHistory.length === 0 ? (
+            <p style={styles.noData}>No chat history available</p>
+          ) : (
+            chatHistory.map((chat, index) => (
+              <div key={index} style={styles.historyCard}>
+                <div style={styles.historyHeader}>
+                  <div style={styles.historyUserInfo}>
+                    <strong style={styles.historyUser}>{chat.user_name}</strong>
+                    <span style={styles.historyRole}>{chat.user_role}</span>
+                    {chat.is_appointment_request && (
+                      <span style={styles.appointmentTag}>📅 Appointment</span>
+                    )}
+                  </div>
+                  <span style={styles.historyTime}>{formatDateTime(chat.created_at)}</span>
+                </div>
+                <div style={styles.historyMessage}>
+                  <div style={styles.historyQuestion}><strong>Q:</strong> {chat.message}</div>
+                  <div style={styles.historyAnswer}><strong>A:</strong> {chat.response}</div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+const AdminNotifications = ({
+  notifications,
+  unreadNotifications,
+  onMarkNotificationRead,
+  onLoadNotifications
+}) => {
+  useEffect(() => {
+    onLoadNotifications();
+  }, []);
+
+  return (
+    <div style={styles.adminSection}>
+      <div style={styles.adminCard}>
+        <div style={styles.cardHeader}>
+          <h3 style={styles.cardTitle}>Notifications ({notifications.length})</h3>
+          <button onClick={onLoadNotifications} style={styles.reloadBtn}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <Icons.Reload />
+              <span style={styles.reloadText}>Refresh</span>
+            </div>
+          </button>
+        </div>
+        <div style={styles.notificationsList}>
+          {notifications.length === 0 ? (
+            <p style={styles.noData}>No notifications</p>
+          ) : (
+            notifications.map((n, index) => (
+              <div 
+                key={index}
+                style={{ 
+                  ...styles.notificationCard, 
+                  background: n.read ? '#f8f9fa' : '#e8f1ff',
+                  cursor: !n.read ? 'pointer' : 'default'
+                }}
+                onClick={() => !n.read && onMarkNotificationRead(n.id)}
+              >
+                <div style={styles.notificationHeader}>
+                  <h4 style={styles.notificationTitle}>{n.title}</h4>
+                  {!n.read && <span style={styles.unreadBadge}>New</span>}
+                </div>
+                <p style={styles.notificationMessage}>{n.message}</p>
+                <div style={styles.notificationTime}>{formatDateTime(n.created_at)}</div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const App = () => {
   const [messages, setMessages] = useState([]);
   const [inputMessage, setInputMessage] = useState('');
@@ -517,10 +908,21 @@ const App = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [tempUserName, setTempUserName] = useState('');
   const [tempPhoneNumber, setTempPhoneNumber] = useState('');
+  const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
   const messagesEndRef = useRef(null);
   const fileInputRef = useRef(null);
   const uploadIntervalRef = useRef(null);
+
+  // Handle responsiveness
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobile(window.innerWidth <= 768);
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -978,6 +1380,26 @@ const App = () => {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
+  // Drag and drop handlers
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    setDragOver(true);
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    setDragOver(false);
+    const files = e.dataTransfer.files;
+    if (files.length > 0 && files[0].type === 'application/pdf') {
+      setUploadFile(files[0]);
+    }
+  };
+
   if (showRoleSelector) {
     return (
       <div style={styles.loginContainer}>
@@ -1206,7 +1628,7 @@ const App = () => {
             ) : (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Icons.Send />
-                Send
+                {isMobile ? 'Send' : 'Send'}
               </div>
             )}
           </button>
@@ -1217,7 +1639,12 @@ const App = () => {
         <div style={styles.modalOverlay} onClick={(e) => {
           if (e.target === e.currentTarget) setShowAdminModal(false);
         }}>
-          <div style={styles.modalContainer}>
+          <div style={{
+            ...styles.modalContainer,
+            width: isMobile ? '95%' : '90%',
+            maxWidth: isMobile ? '95%' : '900px',
+            height: isMobile ? '95%' : '90vh'
+          }}>
             <div style={styles.modalHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Icons.Settings />
@@ -1230,302 +1657,90 @@ const App = () => {
                 <Icons.Close />
               </button>
             </div>
+            
             <div style={styles.adminTabs}>
               <button 
                 style={{...styles.tabBtn, ...(adminTab === 'dashboard' ? styles.tabBtnActive : {})}}
                 onClick={() => setAdminTab('dashboard')}
               >
-                Dashboard
+                {isMobile ? 'Dash' : 'Dashboard'}
               </button>
               <button 
                 style={{...styles.tabBtn, ...(adminTab === 'appointments' ? styles.tabBtnActive : {})}}
                 onClick={() => { setAdminTab('appointments'); loadAppointments(); loadStatistics(); }}
               >
-                Appointments {statistics.pending_appointments > 0 && (<span style={styles.badge}>{statistics.pending_appointments}</span>)}
+                {isMobile ? 'Apps' : 'Appointments'} 
+                {statistics.pending_appointments > 0 && (
+                  <span style={styles.badge}>{statistics.pending_appointments}</span>
+                )}
               </button>
               <button 
                 style={{...styles.tabBtn, ...(adminTab === 'history' ? styles.tabBtnActive : {})}}
                 onClick={() => { setAdminTab('history'); loadChatHistory(); }}
               >
-                Chat History
+                {isMobile ? 'History' : 'Chat History'}
               </button>
               <button 
                 style={{...styles.tabBtn, ...(adminTab === 'notifications' ? styles.tabBtnActive : {})}}
                 onClick={() => { setAdminTab('notifications'); loadNotifications(); }}
               >
-                Notifications {unreadNotifications > 0 && (<span style={styles.badge}>{unreadNotifications}</span>)}
+                {isMobile ? 'Alerts' : 'Notifications'} 
+                {unreadNotifications > 0 && (
+                  <span style={styles.badge}>{unreadNotifications}</span>
+                )}
               </button>
             </div>
             
             <div style={styles.modalContent}>
               {adminTab === 'dashboard' && (
-              <>
-              <div style={styles.adminCard}>
-                <h3 style={styles.cardTitle}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Icons.Analysis />
-                    System Status
-                  </div>
-                </h3>
-                <div style={styles.statusGrid}>
-                  <div style={styles.statusItem}>
-                    <span>Firebase:</span>
-                    <span style={systemStatus.firebase_initialized ? styles.statusSuccess : styles.statusError}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {systemStatus.firebase_initialized ? <Icons.Check /> : <Icons.Error />}
-                        {systemStatus.firebase_initialized ? 'Connected' : 'Disconnected'}
-                      </div>
-                    </span>
-                  </div>
-                  <div style={styles.statusItem}>
-                    <span>Documents:</span>
-                    <span style={styles.statusSuccess}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        <Icons.Document />
-                        {systemStatus.documents_loaded || 0} loaded
-                      </div>
-                    </span>
-                  </div>
-                  <div style={styles.statusItem}>
-                    <span>Vector Store:</span>
-                    <span style={systemStatus.vectorstore_ready ? styles.statusSuccess : styles.statusError}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                        {systemStatus.vectorstore_ready ? <Icons.Check /> : <Icons.Error />}
-                        {systemStatus.vectorstore_ready ? 'Ready' : 'Not Ready'}
-                      </div>
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div style={styles.adminCard}>
-                <h3 style={styles.cardTitle}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Icons.Upload />
-                    Upload Document
-                  </div>
-                </h3>
-                <div 
-                  style={{...styles.uploadArea, ...(dragOver ? styles.uploadAreaDragOver : {})}}
-                  onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
-                  onDragLeave={(e) => { e.preventDefault(); setDragOver(false); }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    setDragOver(false);
-                    const files = e.dataTransfer.files;
-                    if (files.length > 0 && files[0].type === 'application/pdf') {
-                      setUploadFile(files[0]);
-                    }
-                  }}
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <Icons.FileUpload />
-                  <p style={styles.uploadText}>Drag & Drop PDF or Click to Browse</p>
-                </div>
-
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".pdf"
-                  onChange={handleFileSelect}
-                  style={styles.fileInput}
+                <AdminDashboard
+                  adminTab={adminTab}
+                  systemStatus={systemStatus}
+                  documents={documents}
+                  uploadFile={uploadFile}
+                  uploading={uploading}
+                  uploadProgress={uploadProgress}
+                  dragOver={dragOver}
+                  fileInputRef={fileInputRef}
+                  onFileSelect={handleFileSelect}
+                  onRemoveFile={removeSelectedFile}
+                  onFileUpload={handleFileUpload}
+                  onReloadDocuments={handleReloadDocuments}
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  formatFileSize={formatFileSize}
                 />
-
-                {uploadFile && (
-                  <div style={styles.selectedFile}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Icons.Document />
-                      <span>{uploadFile.name} ({formatFileSize(uploadFile.size)})</span>
-                    </div>
-                    <button onClick={removeSelectedFile} style={styles.removeFileBtn}>
-                      <Icons.Remove />
-                    </button>
-                  </div>
-                )}
-
-                <button 
-                  onClick={handleFileUpload}
-                  disabled={!uploadFile || uploading}
-                  style={{...styles.uploadBtn, ...(!uploadFile || uploading ? styles.uploadBtnDisabled : {})}}
-                >
-                  {uploading ? (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <div style={styles.loadingSpinner}></div>
-                      Uploading {uploadProgress}%
-                    </div>
-                  ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Icons.Upload />
-                      Upload PDF
-                    </div>
-                  )}
-                </button>
-
-                {uploading && (
-                  <div style={styles.progressBar}>
-                    <div style={{...styles.progressFill, width: `${uploadProgress}%`}}></div>
-                  </div>
-                )}
-              </div>
-
-              <div style={styles.adminCard}>
-                <div style={styles.cardHeader}>
-                  <h3 style={styles.cardTitle}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Icons.Document />
-                      Documents ({documents.length})
-                    </div>
-                  </h3>
-                  <button onClick={handleReloadDocuments} style={styles.reloadBtn}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Icons.Reload />
-                      Reload
-                    </div>
-                  </button>
-                </div>
-                <div style={styles.documentsList}>
-                  {documents.length === 0 ? (
-                    <p style={styles.noDocuments}>No documents uploaded yet</p>
-                  ) : (
-                    documents.map((doc, index) => (
-                      <div key={index} style={styles.documentItem}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <Icons.Document />
-                          <span>{doc.name}</span>
-                        </div>
-                        <span style={styles.docSize}>{formatFileSize(doc.size)}</span>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-              </>
               )}
 
               {adminTab === 'appointments' && (
-                <>
-                  <div style={styles.statsGrid}>
-                    <div style={styles.statCard}><div style={styles.statIcon}>📊</div><div><div style={styles.statValue}>{statistics.total_conversations || 0}</div><div style={styles.statLabel}>Total Chats</div></div></div>
-                    <div style={styles.statCard}><div style={styles.statIcon}>⏳</div><div><div style={styles.statValue}>{statistics.pending_appointments || 0}</div><div style={styles.statLabel}>Pending</div></div></div>
-                    <div style={styles.statCard}><div style={styles.statIcon}>✅</div><div><div style={styles.statValue}>{statistics.accepted_appointments || 0}</div><div style={styles.statLabel}>Accepted</div></div></div>
-                    <div style={styles.statCard}><div style={styles.statIcon}>❌</div><div><div style={styles.statValue}>{statistics.rejected_appointments || 0}</div><div style={styles.statLabel}>Rejected</div></div></div>
-                  </div>
-                  <div style={styles.adminCard}>
-                    <div style={styles.cardHeader}>
-                      <h3 style={styles.cardTitle}>Appointment Requests</h3>
-                      <select 
-                        value={appointmentFilter}
-                        onChange={(e) => { const v = e.target.value; setAppointmentFilter(v); loadAppointments(v); }}
-                        style={styles.filterSelect}
-                      >
-                        <option value="pending">Pending</option>
-                        <option value="accepted">Accepted</option>
-                        <option value="rejected">Rejected</option>
-                      </select>
-                    </div>
-                    <div style={styles.appointmentsList}>
-                      {appointments.length === 0 ? (
-                        <p style={styles.noData}>No {appointmentFilter} appointments</p>
-                      ) : (
-                        appointments.map((apt, index) => (
-                          <div key={index} style={styles.appointmentCard}>
-                            <div style={styles.appointmentHeader}>
-                              <div>
-                                <h4 style={styles.appointmentName}>{apt.user_name}</h4>
-                                <span style={{...styles.appointmentBadge,
-                                  background: apt.status === 'pending' ? '#fff3cd' : apt.status === 'accepted' ? '#d4edda' : '#f8d7da',
-                                  color: apt.status === 'pending' ? '#856404' : apt.status === 'accepted' ? '#155724' : '#721c24'
-                                }}>{apt.status}</span>
-                              </div>
-                              <span style={styles.appointmentTime}>{formatDateTime(apt.created_at)}</span>
-                            </div>
-                            <div style={styles.appointmentDetails}>
-                              <div style={styles.appointmentRow}><span>📞</span><span style={styles.phoneNumber}>{apt.phone_number}</span></div>
-                              <div style={styles.appointmentRow}><span>📅</span><span>{apt.preferred_date} at {apt.preferred_time}</span></div>
-                              <div style={styles.appointmentReason}><strong>Reason:</strong> {apt.reason}</div>
-                              <div style={styles.appointmentMessage}><strong>Original Message:</strong> {apt.original_message}</div>
-                              {apt.admin_notes && (<div style={styles.adminNotes}><strong>Admin Notes:</strong> {apt.admin_notes}</div>)}
-                            </div>
-                            {apt.status === 'pending' && (
-                              <div style={styles.appointmentActions}>
-                                <button style={styles.acceptBtn} onClick={() => handleAppointmentAction(apt.appointment_id, 'accept')}>✅ Accept & Call Patient</button>
-                                <button style={styles.rejectBtn} onClick={() => handleAppointmentAction(apt.appointment_id, 'reject')}>❌ Reject</button>
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                </>
+                <AdminAppointments
+                  statistics={statistics}
+                  appointments={appointments}
+                  appointmentFilter={appointmentFilter}
+                  onAppointmentFilterChange={setAppointmentFilter}
+                  onAppointmentAction={handleAppointmentAction}
+                  onLoadAppointments={loadAppointments}
+                  onLoadStatistics={loadStatistics}
+                />
               )}
 
               {adminTab === 'history' && (
-                <div style={styles.adminCard}>
-                  <div style={styles.cardHeader}>
-                    <h3 style={styles.cardTitle}>Chat History</h3>
-                    <select 
-                      value={historyFilter}
-                      onChange={(e) => { setHistoryFilter(e.target.value); setTimeout(() => loadChatHistory(), 100); }}
-                      style={styles.filterSelect}
-                    >
-                      <option value="all">All Roles</option>
-                      <option value="patient">Patients</option>
-                      <option value="visitor">Visitors</option>
-                      <option value="staff">Staff</option>
-                      <option value="admin">Admins</option>
-                    </select>
-                  </div>
-                  <div style={styles.historyList}>
-                    {chatHistory.length === 0 ? (
-                      <p style={styles.noData}>No chat history available</p>
-                    ) : (
-                      chatHistory.map((chat, index) => (
-                        <div key={index} style={styles.historyCard}>
-                          <div style={styles.historyHeader}>
-                            <div style={styles.historyUserInfo}>
-                              <strong style={styles.historyUser}>{chat.user_name}</strong>
-                              <span style={styles.historyRole}>{chat.user_role}</span>
-                              {chat.is_appointment_request && (<span style={styles.appointmentTag}>📅 Appointment</span>)}
-                            </div>
-                            <span style={styles.historyTime}>{formatDateTime(chat.created_at)}</span>
-                          </div>
-                          <div style={styles.historyMessage}>
-                            <div style={styles.historyQuestion}><strong>Q:</strong> {chat.message}</div>
-                            <div style={styles.historyAnswer}><strong>A:</strong> {chat.response}</div>
-                          </div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <AdminHistory
+                  chatHistory={chatHistory}
+                  historyFilter={historyFilter}
+                  onHistoryFilterChange={setHistoryFilter}
+                  onLoadChatHistory={loadChatHistory}
+                />
               )}
 
               {adminTab === 'notifications' && (
-                <div style={styles.adminCard}>
-                  <div style={styles.cardHeader}>
-                    <h3 style={styles.cardTitle}>Notifications ({notifications.length})</h3>
-                    <button onClick={loadNotifications} style={styles.reloadBtn}>↻ Refresh</button>
-                  </div>
-                  <div style={styles.notificationsList}>
-                    {notifications.length === 0 ? (
-                      <p style={styles.noData}>No notifications</p>
-                    ) : (
-                      notifications.map((n, index) => (
-                        <div key={index}
-                             style={{ ...styles.notificationCard, background: n.read ? '#f8f9fa' : '#e8f1ff' }}
-                             onClick={() => !n.read && handleMarkNotificationRead(n.id)}>
-                          <div style={styles.notificationHeader}>
-                            <h4 style={styles.notificationTitle}>{n.title}</h4>
-                            {!n.read && (<span style={styles.unreadBadge}>New</span>)}
-                          </div>
-                          <p style={styles.notificationMessage}>{n.message}</p>
-                          <div style={styles.notificationTime}>{formatDateTime(n.created_at)}</div>
-                        </div>
-                      ))
-                    )}
-                  </div>
-                </div>
+                <AdminNotifications
+                  notifications={notifications}
+                  unreadNotifications={unreadNotifications}
+                  onMarkNotificationRead={handleMarkNotificationRead}
+                  onLoadNotifications={loadNotifications}
+                />
               )}
             </div>
           </div>
@@ -1536,7 +1751,11 @@ const App = () => {
         <div style={styles.modalOverlay} onClick={(e) => {
           if (e.target === e.currentTarget) setShowUserInfoModal(false);
         }}>
-          <div style={styles.modalContainer} className="modal-container">
+          <div style={{
+            ...styles.modalContainer,
+            width: isMobile ? '95%' : '500px',
+            maxWidth: isMobile ? '95%' : '500px'
+          }}>
             <div style={styles.modalHeader}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <Icons.Settings />
@@ -1549,8 +1768,8 @@ const App = () => {
                 <Icons.Close />
               </button>
             </div>
-            <div style={styles.modalContent} className="modal-content">
-              <div style={styles.adminCard} className="admin-card">
+            <div style={styles.modalContent}>
+              <div style={styles.adminCard}>
                 <h3 style={styles.cardTitle}>Please provide your details</h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -1814,7 +2033,7 @@ const styles = {
     background: 'linear-gradient(135deg, #fafcff 0%, #f5f9ff 100%)'
   },
   message: {
-    maxWidth: '70%',
+    maxWidth: '85%',
     padding: '14px 18px',
     borderRadius: '16px',
     animation: 'fadeIn 0.3s ease-in',
@@ -1962,8 +2181,6 @@ const styles = {
   modalContainer: {
     background: 'linear-gradient(135deg, #ffffff 0%, #f8fafe 100%)',
     borderRadius: '20px',
-    width: '100%',
-    maxWidth: '900px',
     maxHeight: '90vh',
     display: 'flex',
     flexDirection: 'column',
@@ -2004,17 +2221,29 @@ const styles = {
   modalContent: {
     flex: 1,
     overflowY: 'auto',
-    padding: '30px',
+    padding: '20px',
     display: 'flex',
     flexDirection: 'column',
-    gap: '24px',
+    gap: '20px',
     background: 'linear-gradient(135deg, #fafcff 0%, #f5f9ff 100%)'
+  },
+  adminDashboard: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
+  },
+  adminSection: {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: '20px'
   },
   adminCard: {
     background: 'linear-gradient(135deg, #ffffff 0%, #f8fafe 100%)',
     borderRadius: '16px',
-    padding: '28px',
-    border: '1px solid #e8f1ff'
+    padding: '20px',
+    border: '1px solid #e8f1ff',
+    width: '100%',
+    boxSizing: 'border-box'
   },
   cardTitle: {
     margin: '0 0 20px 0',
@@ -2026,7 +2255,9 @@ const styles = {
     display: 'flex',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: '20px'
+    marginBottom: '20px',
+    flexWrap: 'wrap',
+    gap: '10px'
   },
   statusGrid: {
     display: 'grid',
@@ -2054,7 +2285,7 @@ const styles = {
   uploadArea: {
     border: '2px dashed #d1e4ff',
     borderRadius: '16px',
-    padding: '48px 24px',
+    padding: '40px 20px',
     textAlign: 'center',
     cursor: 'pointer',
     transition: 'all 0.3s',
@@ -2081,7 +2312,8 @@ const styles = {
     background: 'linear-gradient(135deg, #e8f1ff 0%, #f0f8ff 100%)',
     borderRadius: '12px',
     marginTop: '16px',
-    border: '1px solid #d1e4ff'
+    border: '1px solid #d1e4ff',
+    gap: '10px'
   },
   removeFileBtn: {
     width: '32px',
@@ -2096,7 +2328,8 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
-    transition: 'all 0.3s'
+    transition: 'all 0.3s',
+    flexShrink: 0
   },
   uploadBtn: {
     width: '100%',
@@ -2144,7 +2377,13 @@ const styles = {
     display: 'flex',
     alignItems: 'center',
     gap: '6px',
-    transition: 'all 0.3s'
+    transition: 'all 0.3s',
+    whiteSpace: 'nowrap'
+  },
+  reloadText: {
+    '@media (max-width: 768px)': {
+      display: 'none'
+    }
   },
   documentsList: {
     display: 'flex',
@@ -2166,29 +2405,38 @@ const styles = {
     padding: '16px 20px',
     background: 'linear-gradient(135deg, #f8fafe 0%, #f0f8ff 100%)',
     borderRadius: '12px',
-    border: '1px solid #e8f1ff'
+    border: '1px solid #e8f1ff',
+    gap: '10px'
   },
   docSize: {
     fontSize: '12px',
     color: '#718096',
-    fontWeight: '500'
+    fontWeight: '500',
+    whiteSpace: 'nowrap'
   },
   adminTabs: {
     display: 'flex',
-    gap: '10px',
-    padding: '12px 20px',
+    gap: '8px',
+    padding: '15px 20px',
     borderBottom: '1px solid #e2e8f0',
-    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafe 100%)'
+    background: 'linear-gradient(135deg, #ffffff 0%, #f8fafe 100%)',
+    overflowX: 'auto',
+    whiteSpace: 'nowrap'
   },
   tabBtn: {
-    padding: '10px 14px',
+    padding: '10px 16px',
     background: '#f1f5ff',
     border: '1px solid #d1e4ff',
     color: '#1F3A9E',
     borderRadius: '10px',
     cursor: 'pointer',
-    fontSize: '13px',
-    fontWeight: '600'
+    fontSize: '14px',
+    fontWeight: '600',
+    transition: 'all 0.3s',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+    whiteSpace: 'nowrap'
   },
   tabBtnActive: {
     background: '#2E4AC7',
@@ -2196,17 +2444,18 @@ const styles = {
     borderColor: '#1F3A9E'
   },
   badge: {
-    marginLeft: '6px',
     background: '#fff3cd',
     color: '#856404',
     borderRadius: '10px',
     padding: '2px 6px',
     fontSize: '12px',
-    fontWeight: '700'
+    fontWeight: '700',
+    minWidth: '20px',
+    textAlign: 'center'
   },
   statsGrid: {
     display: 'grid',
-    gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+    gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
     gap: '12px',
     marginBottom: '16px'
   },
@@ -2219,51 +2468,230 @@ const styles = {
     borderRadius: '12px',
     border: '1px solid #e8f1ff'
   },
-  statIcon: { fontSize: '18px' },
-  statValue: { fontWeight: '800', fontSize: '18px' },
-  statLabel: { color: '#718096', fontSize: '12px' },
+  statIcon: { 
+    fontSize: '18px',
+    flexShrink: 0
+  },
+  statValue: { 
+    fontWeight: '800', 
+    fontSize: '18px' 
+  },
+  statLabel: { 
+    color: '#718096', 
+    fontSize: '12px' 
+  },
   filterSelect: {
     padding: '8px 10px',
     borderRadius: '8px',
     border: '1px solid #d1e4ff',
     background: 'white',
     color: '#1F3A9E',
-    fontWeight: '600'
+    fontWeight: '600',
+    fontSize: '14px'
   },
-  appointmentsList: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  appointmentCard: { border: '1px solid #e8f1ff', borderRadius: '12px', padding: '16px', background: '#fff' },
-  appointmentHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
-  appointmentName: { margin: 0, fontSize: '16px', color: '#1F3A9E' },
-  appointmentBadge: { marginLeft: '8px', borderRadius: '8px', padding: '2px 6px', fontSize: '12px', fontWeight: '700' },
-  appointmentTime: { fontSize: '12px', color: '#718096' },
-  appointmentDetails: { display: 'flex', flexDirection: 'column', gap: '6px', color: '#2d3748' },
-  appointmentRow: { display: 'flex', gap: '8px', alignItems: 'center' },
-  phoneNumber: { fontWeight: '700', color: '#2d3748' },
+  appointmentsList: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '12px' 
+  },
+  appointmentCard: { 
+    border: '1px solid #e8f1ff', 
+    borderRadius: '12px', 
+    padding: '16px', 
+    background: '#fff' 
+  },
+  appointmentHeader: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'flex-start',
+    marginBottom: '12px',
+    gap: '10px',
+    flexWrap: 'wrap'
+  },
+  appointmentHeaderContent: {
+    display: 'flex',
+    alignItems: 'center',
+    gap: '8px',
+    flexWrap: 'wrap'
+  },
+  appointmentName: { 
+    margin: 0, 
+    fontSize: '16px', 
+    color: '#1F3A9E' 
+  },
+  appointmentBadge: { 
+    borderRadius: '8px', 
+    padding: '2px 6px', 
+    fontSize: '12px', 
+    fontWeight: '700',
+    whiteSpace: 'nowrap'
+  },
+  appointmentTime: { 
+    fontSize: '12px', 
+    color: '#718096',
+    whiteSpace: 'nowrap'
+  },
+  appointmentDetails: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '6px', 
+    color: '#2d3748' 
+  },
+  appointmentRow: { 
+    display: 'flex', 
+    gap: '8px', 
+    alignItems: 'center' 
+  },
+  phoneNumber: { 
+    fontWeight: '700', 
+    color: '#2d3748' 
+  },
   appointmentReason: {},
-  appointmentMessage: { background: '#f8fafc', padding: '8px', borderRadius: '8px', border: '1px solid #e8f1ff' },
-  adminNotes: { background: '#fffbea', padding: '8px', borderRadius: '8px', border: '1px solid #fff3cd' },
-  appointmentActions: { display: 'flex', gap: '10px', marginTop: '10px' },
-  acceptBtn: { padding: '8px 12px', background: '#d4edda', color: '#155724', border: '1px solid #c3e6cb', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
-  rejectBtn: { padding: '8px 12px', background: '#f8d7da', color: '#721c24', border: '1px solid #f5c6cb', borderRadius: '8px', cursor: 'pointer', fontWeight: '700' },
-  historyList: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  historyCard: { border: '1px solid #e8f1ff', borderRadius: '12px', padding: '16px', background: '#fff' },
-  historyHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' },
-  historyUserInfo: { display: 'flex', alignItems: 'center', gap: '8px' },
-  historyUser: { color: '#1F3A9E' },
-  historyRole: { background: '#eef2ff', color: '#1F3A9E', borderRadius: '8px', padding: '2px 6px', fontSize: '12px', fontWeight: '700' },
-  appointmentTag: { marginLeft: '8px' },
-  historyTime: { fontSize: '12px', color: '#718096' },
-  historyMessage: { display: 'flex', flexDirection: 'column', gap: '6px' },
-  notificationsList: { display: 'flex', flexDirection: 'column', gap: '12px' },
-  notificationCard: { border: '1px solid #e8f1ff', borderRadius: '12px', padding: '12px', cursor: 'pointer' },
-  notificationHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  notificationTitle: { margin: 0, color: '#1F3A9E' },
-  unreadBadge: { background: '#2E4AC7', color: 'white', borderRadius: '8px', padding: '2px 6px', fontSize: '11px', fontWeight: '700' },
-  notificationMessage: { margin: '8px 0', color: '#2d3748' },
-  notificationTime: { fontSize: '12px', color: '#718096' },
-  noData: { textAlign: 'center', color: '#718096', padding: '16px' }
+  appointmentMessage: { 
+    background: '#f8fafc', 
+    padding: '8px', 
+    borderRadius: '8px', 
+    border: '1px solid #e8f1ff',
+    wordBreak: 'break-word'
+  },
+  adminNotes: { 
+    background: '#fffbea', 
+    padding: '8px', 
+    borderRadius: '8px', 
+    border: '1px solid #fff3cd',
+    wordBreak: 'break-word'
+  },
+  appointmentActions: { 
+    display: 'flex', 
+    gap: '10px', 
+    marginTop: '12px',
+    flexWrap: 'wrap'
+  },
+  acceptBtn: { 
+    padding: '8px 12px', 
+    background: '#d4edda', 
+    color: '#155724', 
+    border: '1px solid #c3e6cb', 
+    borderRadius: '8px', 
+    cursor: 'pointer', 
+    fontWeight: '700',
+    fontSize: '14px',
+    whiteSpace: 'nowrap'
+  },
+  rejectBtn: { 
+    padding: '8px 12px', 
+    background: '#f8d7da', 
+    color: '#721c24', 
+    border: '1px solid #f5c6cb', 
+    borderRadius: '8px', 
+    cursor: 'pointer', 
+    fontWeight: '700',
+    fontSize: '14px',
+    whiteSpace: 'nowrap'
+  },
+  historyList: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '12px' 
+  },
+  historyCard: { 
+    border: '1px solid #e8f1ff', 
+    borderRadius: '12px', 
+    padding: '16px', 
+    background: '#fff' 
+  },
+  historyHeader: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'flex-start',
+    marginBottom: '12px',
+    gap: '10px',
+    flexWrap: 'wrap'
+  },
+  historyUserInfo: { 
+    display: 'flex', 
+    alignItems: 'center', 
+    gap: '8px',
+    flexWrap: 'wrap'
+  },
+  historyUser: { 
+    color: '#1F3A9E' 
+  },
+  historyRole: { 
+    background: '#eef2ff', 
+    color: '#1F3A9E', 
+    borderRadius: '8px', 
+    padding: '2px 6px', 
+    fontSize: '12px', 
+    fontWeight: '700',
+    whiteSpace: 'nowrap'
+  },
+  appointmentTag: {
+    marginLeft: '8px',
+    whiteSpace: 'nowrap'
+  },
+  historyTime: { 
+    fontSize: '12px', 
+    color: '#718096',
+    whiteSpace: 'nowrap'
+  },
+  historyMessage: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '6px' 
+  },
+  historyQuestion: {
+    wordBreak: 'break-word'
+  },
+  historyAnswer: {
+    wordBreak: 'break-word'
+  },
+  notificationsList: { 
+    display: 'flex', 
+    flexDirection: 'column', 
+    gap: '12px' 
+  },
+  notificationCard: { 
+    border: '1px solid #e8f1ff', 
+    borderRadius: '12px', 
+    padding: '16px', 
+    cursor: 'pointer' 
+  },
+  notificationHeader: { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    marginBottom: '8px'
+  },
+  notificationTitle: { 
+    margin: 0, 
+    color: '#1F3A9E' 
+  },
+  unreadBadge: { 
+    background: '#2E4AC7', 
+    color: 'white', 
+    borderRadius: '8px', 
+    padding: '2px 6px', 
+    fontSize: '11px', 
+    fontWeight: '700' 
+  },
+  notificationMessage: { 
+    margin: '8px 0', 
+    color: '#2d3748',
+    wordBreak: 'break-word'
+  },
+  notificationTime: { 
+    fontSize: '12px', 
+    color: '#718096' 
+  },
+  noData: { 
+    textAlign: 'center', 
+    color: '#718096', 
+    padding: '32px' 
+  }
 };
 
+// Add responsive styles directly to the document
 const styleSheet = document.createElement('style');
 styleSheet.textContent = `
   @keyframes fadeIn {
@@ -2291,16 +2719,124 @@ styleSheet.textContent = `
     filter: brightness(1.1);
   }
   
+  /* Mobile Responsive Styles */
   @media (max-width: 768px) {
-    .chat-messages { padding: 15px !important; }
-    .message { max-width: 85% !important; }
-    .quick-actions { padding: 15px !important; }
-    .action-buttons { gap: 8px !important; }
-    .action-btn { padding: 10px 14px !important; font-size: 13px !important; }
-    .modal-container { margin: 10px !important; }
-    .modal-content { padding: 20px !important; }
-    .admin-card { padding: 20px !important; }
-    .status-grid { grid-template-columns: 1fr !important; }
+    .chat-messages { 
+      padding: 15px !important; 
+    }
+    .message { 
+      max-width: 90% !important; 
+      padding: 12px 16px !important;
+    }
+    .quick-actions { 
+      padding: 15px !important; 
+    }
+    .action-buttons { 
+      gap: 8px !important; 
+    }
+    .action-btn { 
+      padding: 10px 14px !important; 
+      font-size: 13px !important; 
+    }
+    .modal-content { 
+      padding: 15px !important; 
+      gap: 15px !important;
+    }
+    .admin-card { 
+      padding: 16px !important; 
+    }
+    .status-grid { 
+      grid-template-columns: 1fr !important; 
+    }
+    .stats-grid {
+      grid-template-columns: repeat(2, 1fr) !important;
+    }
+    .card-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+    }
+    .appointment-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+    }
+    .appointment-actions {
+      justify-content: center !important;
+    }
+    .history-header {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+    }
+    .header-content {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 10px !important;
+    }
+    .header-controls {
+      justify-content: flex-start !important;
+      width: 100% !important;
+    }
+    .chat-input {
+      padding: 15px !important;
+      gap: 10px !important;
+    }
+    .send-button {
+      min-width: 80px !important;
+      padding: 14px 16px !important;
+    }
+    .admin-tabs {
+      padding: 12px 15px !important;
+      gap: 6px !important;
+    }
+    .tab-btn {
+      padding: 8px 12px !important;
+      font-size: 13px !important;
+    }
+    .upload-area {
+      padding: 30px 15px !important;
+    }
+    .selected-file {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 10px !important;
+    }
+    .document-item {
+      flex-direction: column !important;
+      align-items: flex-start !important;
+      gap: 8px !important;
+    }
+  }
+  
+  @media (max-width: 480px) {
+    .stats-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .message {
+      max-width: 95% !important;
+    }
+    .action-buttons {
+      justify-content: center !important;
+    }
+    .action-btn {
+      flex: 1 !important;
+      min-width: 120px !important;
+      text-align: center !important;
+    }
+  }
+  
+  /* Scrollbar styling */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
   }
 `;
 document.head.appendChild(styleSheet);
