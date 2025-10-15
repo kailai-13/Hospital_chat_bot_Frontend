@@ -1669,7 +1669,7 @@ const App = () => {
                 style={{...styles.tabBtn, ...(adminTab === 'appointments' ? styles.tabBtnActive : {})}}
                 onClick={() => { setAdminTab('appointments'); loadAppointments(); loadStatistics(); }}
               >
-                {isMobile ? 'Appointments' : 'Appointments'} 
+                {isMobile ? 'Apps' : 'Appointments'} 
                 {statistics.pending_appointments > 0 && (
                   <span style={styles.badge}>{statistics.pending_appointments}</span>
                 )}
